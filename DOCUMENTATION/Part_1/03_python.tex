@@ -21,11 +21,11 @@ For more elaborate visualisation, for instance in \href{www.paraview.org}{Paravi
 
 The Python class \texttt{ses3d\_fields} contains tools for the visualisation of Earth models and velocity field snapshots defined on the spectral-element grid of SES3D. To plot, for instance, $\vsh$ at $20$ km depth with a colourbar ranging from $2698.0$ m$/$s to $3972.0$ m$/$s with a high-resolution coastline, just type\\[5pt]
 \texttt{run ses3d\_fields.py\\
-field=ses3d\_fields('../MODELS/MODELS/','earth\_model')\\
+field=ses3d\_fields('../','/MODELS/MODELS/','earth\_model')\\
 field.plot\_depth\_slice('vsh',20.0,2698.0,3872.0,res='h')}\\[5pt]
-Similarly, for plotting velocity field snapshots for $v_x$ at $100$ km depth and at iteration $1000$, type\\[5pt]
+The first path '../' denotes the parent directory of the SES3D project, and the second '/MODELS/MODELS/' is the location of the Earth model parameters. Similarly, for plotting velocity field snapshots for $v_x$ at $100$ km depth and at iteration $1000$, type\\[5pt]
 \texttt{run ses3d\_fields.py\\
-field=ses3d\_fields('../DATA/OUTPUT/','velocity\_snapshot')\\
+field=ses3d\_fields('../','/DATA/OUTPUT/','velocity\_snapshot')\\
 field.plot\_depth\_slice('vx',100.0,-9e-8,9e-8,iteration=1000,res='h')}\\
 
 
