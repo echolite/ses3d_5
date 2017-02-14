@@ -36,7 +36,7 @@ class ses3d_seismogram:
 
   def read(self,directory,station_name,integrate=False):
     """ read seismogram
-    read(directory,station_name,integrate)
+    read(directory,station_name,integrate=False)
 
     directory: directory where seismograms are located
     station_name: name of the station, without '.x', '.y' or '.z'

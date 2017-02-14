@@ -14,7 +14,6 @@ UNIT_DICT = {
     "vp": r"$\frac{\mathrm{m}}{\mathrm{s}}$",
     "vsv": r"$\frac{\mathrm{m}}{\mathrm{s}}$",
     "vsh": r"$\frac{\mathrm{m}}{\mathrm{s}}$",
-    #"rho": r"$\frac{\mathrm{kg}^3}{\mathrm{m}^3}$",
     "rhoinv": r"$\frac{\mathrm{m}^3}{\mathrm{kg}^3}$",
     "vx": r"$\frac{\mathrm{m}}{\mathrm{s}}$",
     "vy": r"$\frac{\mathrm{m}}{\mathrm{s}}$",
@@ -29,15 +28,16 @@ class ses3d_fields(object):
 	Class for reading and plotting 3D fields defined on the SEM grid of SES3D.
 	"""
 
-	def __init__(self, directory, field_type="earth_model"):
+	def __init__(self, project_directory, data_directory, field_type="earth_model", recfile="recfile_1"):
 		"""
-		__init__(self, directory, field_type="earth_model")
+		__init__(self, project_directory, data_directory, field_type="earth_model")
 
 		Initiate the ses3d_fields class. Read available components. Admissible field_type's currently
 		are "earth_model", "velocity_snapshot", and "kernel".
 		"""
 
-		self.directory = directory
+		self.project_directory = project_directory
+		self.data_directory = data_directory
 		self.field_type = field_type
 
 		#- Read available Earth model files. ------------------------------------------------------
@@ -62,7 +62,7 @@ class ses3d_fields(object):
 		self.make_coordinates()
 
 		#- Read rotation parameters. --------------------------------------------------------------
-		fid = open('rotation_parameters.txt','r')
+		fid = open(project_directory+'TOOLS/rotation_parameters.txt','r')
 		fid.readline()
 		self.rotangle = float(fid.readline().strip())
 		fid.readline()
@@ -71,11 +71,11 @@ class ses3d_fields(object):
 		fid.close()
 
 		#- Read station locations, if available. --------------------------------------------------
-		if os.path.exists('../INPUT/recfile_1'):
+		if os.path.exists(project_directory+'/INPUT/'+recfile):
 
 			self.stations = True
 
-			f = open('../INPUT/recfile_1')
+			f = open(project_directory+'/INPUT/'+recfile)
 
 			self.n_stations = int(f.readline())
 			self.stnames = []
@@ -104,7 +104,7 @@ class ses3d_fields(object):
 		setup = {}
 
 		#- Open setup file and read header. -------------------------------------------------------
-		f = open('../INPUT/setup','r')
+		f = open(self.project_directory+'/INPUT/setup','r')
 		lines = f.readlines()[1:]
 		lines = [_i.strip() for _i in lines if _i.strip()]
 
@@ -232,15 +232,15 @@ class ses3d_fields(object):
 
 		#- Earth models. --------------------------------------------------------------------------
 		if self.field_type == "earth_model":
-			filename = os.path.join(self.directory, component+str(proc_number))
+			filename = os.path.join(self.project_directory, self.data_directory, component+str(proc_number))
 
 		#- Velocity field snapshots. --------------------------------------------------------------
 		elif self.field_type == "velocity_snapshot":
-			filename = os.path.join(self.directory, component+"_"+str(proc_number)+"_"+str(iteration))
+			filename = os.path.join(self.project_directory, self.data_directory, component+"_"+str(proc_number)+"_"+str(iteration))
 
 		#- Sensitivity kernels. -------------------------------------------------------------------
 		elif self.field_type == "kernel":
-			filename = os.path.join(self.directory, "grad_"+component+"_"+str(proc_number))
+			filename = os.path.join(self.project_directory, self.data_directory, "grad_"+component+"_"+str(proc_number))
 
 		return filename
 
@@ -385,7 +385,7 @@ class ses3d_fields(object):
 		The currently available "components" are:
 			Material parameters: A, B, C, mu, lambda, rhoinv, vp, vsh, vsv, rho
 			Velocity field snapshots: vx, vy, vz
-			Sensitivity kernels: Q_mu, Q_kappa, alpha_mu, alpha_kappa
+			Sensitivity kernels: vp, vsh, vsv, rho
 		"""
 
 
@@ -433,7 +433,6 @@ class ses3d_fields(object):
 				field = self.read_single_box(component,p,iteration)
 				lats = 90.0 - self.theta[p,:] * 180.0 / np.pi
 				lons = self.phi[p,:] * 180.0 / np.pi
-				lon, lat = np.meshgrid(lons, lats)
 
 				#- Find the depth index and plot for this one box. --------------------------------
 				idz=min(np.where(min(np.abs(self.z[p,:]-radius))==np.abs(self.z[p,:]-radius))[0])
