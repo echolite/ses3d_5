@@ -1,0 +1,5 @@
+# Compiled Python.
+*.pyc
+
+# Rotation parameters in the TOOLS directory.
+rotation_parameters.txt
