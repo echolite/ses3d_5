@@ -3,3 +3,11 @@
 
 # Rotation parameters in the TOOLS directory.
 rotation_parameters.txt
+
+# Helper TeX files.
+DOCUMENTATION/*.aux
+DOCUMENTATION/*.log
+DOCUMENTATION/*.out
+DOCUMENTATION/*.gz
+DOCUMENTATION/*.toc
+

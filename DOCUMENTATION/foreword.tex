@@ -1,0 +1,33 @@
+\foreword
+
+\SES is a programme package for the simulation of elastic wave
+propagation and waveform inversion in a spherical section. The package is based on a spectral-element discretisation of
+the seismic wave equation combined with adjoint techniques.\\[5pt]
+\SES supports 3D heterogeneous visco-elastic rheologies with radial anisotropy. Anisotropic perfectly matched layers
+are implemented to avoid reflections from the unphysical boundaries of the spherical section.\\[5pt]
+\SES operates in the natural spherical coordinates, which is untypical for spectral-element approaches. The advantages are a
+compact programme code, fast computations for spherical sections that are sufficiently far
+from the poles and the core, and the easy implementation of 3D models.\\[5pt]
+\SES is fully parallelised, meaning that the computational domain is partitioned into subdomains, each of which is assigned to one compute core. Communication between subdomains is based on MPI.\\[5pt]
+\SES has been developed for continental-scale full seismic waveform
+inversion. It is, however, applicable to a wide range of local- to continental-scale wave propagation problems.\\[5pt]
+\SES is deliberately puristic. This is intended to (1) make the code
+easily adaptable to particular problems, (2) facilitate the
+implementation of 3D models, (3) reduce the likelihood of
+programming errors, and (4) allow for an easy adaptation to new hardware architectures. The last point becomes particularly relevant in times when hardware architecture changes rapidly.\\[5pt]
+This tutorial is split into a description of the programme code and
+an introduction to the mathematical background of \SES. Reading the
+mathematical part is not required to successfully run \SES. It is,
+however, strongly recommended. The chance of using \SES incorrectly
+or inefficiently is high when its mathematical background is not
+known. This is true for any numerical method.\\[5pt]
+The description of the programme package is centred around
+realistic examples that a new user may want to reproduce in order to
+become familiar with \SES.\\[5pt]
+\textbf{\SES is hosted on} \href{https://github.com}{Github} \textbf{and can be obtained from} \href{https://github.com/echolite/ses3d}{https://github.com/echolite/ses3d}.
+
+
+\vspace{\baselineskip}
+\begin{flushright}\noindent
+Zurich, February 2014\hfill {\it Andreas Fichtner}\\
+\end{flushright}

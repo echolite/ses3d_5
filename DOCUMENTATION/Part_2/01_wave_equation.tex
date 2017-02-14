@@ -1,0 +1,160 @@
+\chapter{The seismic wave equation}\label{C:AnalyticalSetup}
+
+This chapter is concerned with the mathematical description of
+seismic wave propagation in the Earth and the derivation of
+equations that can be solved numerically in an efficient way.
+Following a brief review of the elastic wave equation and its
+subsidiary conditions in section \ref{S:wave_equation}, we elaborate
+on the simulation of anisotropy (section \ref{S:anisotropy}) and
+attenuation (section \ref{S:attenuation}). We also cover the
+implementation and analysis of absorbing boundaries within this
+chapter on the analytical setup, because their properties are
+relatively independent from a particular numerical scheme.
+
+\section{The elastic wave equation}\label{S:wave_equation}
+
+The propagation of seismic waves in the Earth can be modelled with
+the elastic wave equation
+\begin{equation}\label{E:into_waveeq001}
+\rho(\w{x})\ddot{\w{u}}(\w{x}, t) - \nabla\cdot\s{\sigma}(\w{x}, t)
+= \w{f}(\w{x}, t)\,,
+\end{equation}
+that relates the displacement field $\w{u}$ to the mass density
+$\rho$, the stress tensor $\s{\sigma}$ and an external force density
+$\w{f}$ (e.g. Dahlen \& Tromp, 1998; Kennett, 2001; Aki \& Richards, 2002). The elastic wave
+equation as presented above is a linearised version of the momentum
+balance equation, i.e., of Newton's second law. It is valid under
+the assumption that deviations from the reference configuration of
+the Earth are small. Furthermore, the rotation of the Earth and its
+self-gravitation are omitted. These effects are negligible when
+oscillation periods are shorter than $\sim 200$ s. At the surface
+$\delta\oplus$ of the Earth $\oplus$ the normal components of the
+stress tensor $\s{\sigma}$ vanish:
+\begin{equation}\label{E:into_waveeq002}
+\s{\sigma}\cdot\w{e}_r |_{\w{x}\in\partial\oplus} = \w{0}\,.
+\end{equation}
+Equation (\ref{E:into_waveeq002}) is the free surface boundary
+condition. Both the displacement field $\w{u}$ and the velocity
+field $\w{v}=\dot{\w{u}}$ are required to vanish prior to $t=t_0$
+when the external force $\w{f}$ starts to act, i.e.,
+\begin{equation}\label{E:into_waveeq003}
+\w{u}|_{t<t_0}=\w{v}|_{t<t_0}=\w{0}\,.
+\end{equation}
+For convenience we will mostly choose $t_0=0$. To obtain a complete
+set of equations, the stress tensor $\s{\sigma}$ has to be related
+to the displacement field $\w{u}$. It is usually assumed that the
+rheology is visco-elastic, meaning that the current stress tensor
+$\s{\sigma}$ depends linearly on the history of the strain tensor
+$\s{\epsilon}=\frac{1}{2}(\nabla \w{u} + \nabla \w{u}^T)$:
+\begin{equation}\label{E:intro_waveeq004}
+\s{\sigma}(\w{x}, t) = \int\limits_{-\infty}^{\infty}
+\w{\dot{C}}(\w{x}, t-t'):\s{\epsilon}(\w{x}, t')\,dt'\,.
+\end{equation}
+The fourth order tensor $\w{C}$ is the elastic tensor. In the case
+of a perfectly elastic medium the elastic tensor is of the form
+$\w{C}(\w{x},t)=\w{C}(\w{x})\,H(t)$, where $H$ is the Heaviside
+function. We then have $\s{\sigma}=\w{C}(\w{x}):\s{\epsilon}(\w{x},
+t)$. The symmetry of $\s{\epsilon}$, the conservation of angular
+momentum and the relation of $\w{C}$ to the internal energy (e.g.
+Dahlen \& Tromp, 1998) require that the components of $\w{C}$
+satisfy the following symmetry relations:
+\begin{equation}\label{E:intro_waveeq005}
+C_{ijkl}=C_{klij}=C_{jikl}\,.
+\end{equation}
+Moreover, the elastic tensor is causal:
+\begin{equation}\label{E:into_waveeq006}
+\w{C}(t)|_{t<t_0}=\w{0}\,.
+\end{equation}
+Equation (\ref{E:intro_waveeq004}) is $-$ unlike the wave equation
+within its limits of validity $-$ not a fundamental law of physics
+but an empirical relation that has been found to describe a wide
+range of phenomena very well. It can be regarded as a linearisation
+of a more general non-linear constitutive relation. Its validity is,
+in this sense, restricted to scenarios where the strain tensor
+$\s{\epsilon}$ is a small quantity. The particular choices of
+$\w{C}$ and its time dependence will be the subjects of the
+following sections on attenuation and anisotropy.
+
+\section{Anisotropy}\label{S:anisotropy} 
+Anisotropy is the dependence of the elastic tensor on the orientation of the
+coordinate system. Its most direct seismological expression is the
+dependence of seismic velocities on the propagation and polarisation
+directions of elastic waves. It is thought to play a major role in the Earth's crust and upper mantle.\\
+Besides the splitting of shear waves, the Love wave-Rayleigh wave
+discrepancy is one of the principal seismic observations that is
+directly related to anisotropy: A Love wave and a Rayleigh wave
+travelling in the same direction usually exhibit different wave
+speeds as a consequence of their different polarisations. This led
+to the inclusion of anisotropy with radial symmetry axis in the
+global reference model PREM (Dziewonski \& Anderson, 1981). In this
+model the anisotropy
+is limited to the upper 220 km.\\
+Guided by these observations, we decided to implement anisotropy
+with radial symmetry axis. For such a medium, there are only 5
+independent elastic tensor components that are different from zero.
+They can be summarised in a $6\times 6$ matrix (e.g. Babuska \& Cara, 1991):
+\begin{align}\label{E:setup15}
+&\begin{pmatrix}
+C_{r r r r} & C_{r r \phi \phi} & C_{r r \theta \theta} & C_{r r \phi \theta} & C_{r r r \theta} & C_{r r r \phi} \\
+C_{\phi \phi r r} & C_{\phi \phi \phi \phi} & C_{\phi \phi \theta \theta} & C_{\phi \phi \phi \theta} & C_{\phi \phi r \theta} & C_{\phi \phi r \phi} \\
+C_{\theta \theta r r} & C_{\theta \theta \phi \phi} & C_{\theta \theta \theta \theta} & C_{\theta \theta \phi \theta} & C_{\theta \theta r \theta} & C_{\theta \theta r \phi} \\
+C_{\phi \theta r r} & C_{\phi \theta \phi \phi} & C_{\phi \theta \theta \theta} & C_{\phi \theta \phi \theta} & C_{\phi \theta r \theta} & C_{\phi \theta r \phi} \\
+C_{r \theta r r} & C_{r \theta \phi \phi} & C_{r \theta \theta \theta} & C_{r \theta \phi \theta} & C_{r \theta r \theta} & C_{r \theta r \phi} \\
+C_{r \phi r r} & C_{r \phi \phi \phi} & C_{r \phi \theta \theta} &
+C_{r \phi \phi \theta} & C_{r \phi r \theta} & C_{r \phi r \phi}
+\end{pmatrix}\notag\\
+=&
+\begin{pmatrix}
+\lambda+2\mu & \lambda+c & \lambda+c & 0 & 0 & 0 \\
+\lambda+c & \lambda+2\mu+a & \lambda+a & 0 & 0 & 0 \\
+\lambda+c & \lambda+a & \lambda+2\mu+a & 0 & 0 & 0 \\
+0 & 0 & 0 & \mu & 0 & 0 \\
+0 & 0 & 0 & 0 & \mu+b & 0 \\
+0 & 0 & 0 & 0 & 0 & \mu+b
+\end{pmatrix}
+\end{align}
+Love (1892) proposed an alternative parametrisation
+\begin{align}\label{E:setup15b}
+&\begin{pmatrix}
+C_{r r r r} & C_{r r \phi \phi} & C_{r r \theta \theta} & C_{r r \phi \theta} & C_{r r r \theta} & C_{r r r \phi} \\
+C_{\phi \phi r r} & C_{\phi \phi \phi \phi} & C_{\phi \phi \theta \theta} & C_{\phi \phi \phi \theta} & C_{\phi \phi r \theta} & C_{\phi \phi r \phi} \\
+C_{\theta \theta r r} & C_{\theta \theta \phi \phi} & C_{\theta \theta \theta \theta} & C_{\theta \theta \phi \theta} & C_{\theta \theta r \theta} & C_{\theta \theta r \phi} \\
+C_{\phi \theta r r} & C_{\phi \theta \phi \phi} & C_{\phi \theta \theta \theta} & C_{\phi \theta \phi \theta} & C_{\phi \theta r \theta} & C_{\phi \theta r \phi} \\
+C_{r \theta r r} & C_{r \theta \phi \phi} & C_{r \theta \theta \theta} & C_{r \theta \phi \theta} & C_{r \theta r \theta} & C_{r \theta r \phi} \\
+C_{r \phi r r} & C_{r \phi \phi \phi} & C_{r \phi \theta \theta} &
+C_{r \phi \phi \theta} & C_{r \phi r \theta} & C_{r \phi r \phi}
+\end{pmatrix}\notag\\
+=&
+\begin{pmatrix}
+C_L & F_L & F_L & 0 & 0 & 0 \\
+F_L & A_L & A_L-2N_L & 0 & 0 & 0 \\
+F_L & A_L-2N_L & A_L & 0 & 0 & 0 \\
+0 & 0 & 0 & N_L & 0 & 0 \\
+0 & 0 & 0 & 0 & L_L & 0 \\
+0 & 0 & 0 & 0 & 0 & L_L
+\end{pmatrix}
+\end{align}
+We chose to use the parametrisation from equation (\ref{E:setup15})
+because it easily allows us to model isotropy by simply setting
+$a=b=c=0$. Remember, that all components of the elastic tensor are
+functions of time, $t$, and space, $\w{x}$. Density, $\rho$ and the
+elastic parameters $\lambda, \mu, a, b$ and $c$ can be related to
+the wave speeds of SH, SV, PH and PV waves:
+\begin{equation}\label{E:svsh17}
+\vsv=\sqrt{\frac{\mu+b}{\rho}}\,,\quad
+\vsh=\sqrt{\frac{\mu}{\rho}}\,,\quad
+\vpv=\sqrt{\frac{\lambda+2\mu}{\rho}}\,,\quad
+\vph=\sqrt{\frac{\lambda+2\mu+a}{\rho}}\,.
+\end{equation}
+The velocities of SH, SV, PH and PV waves specify only two of the
+three additional elastic parameters necessary for anisotropy with
+radial symmetry axis, namely $a$ and $b$. Also radially propagating
+S waves do not allow us to find $c$, because they propagate with the
+velocity $\sqrt{(\mu+b)/\rho}$, just as SV waves. In fact, using
+plane waves, $c$ can be determined only from P waves that do not
+travel in exactly radial or horizontal directions. Following
+Takeuchi \& Saito (1972) and Dziewonski \& Anderson (1981) we
+incorporate $c$ into a dimensionless parameter
+\begin{equation}\label{E:pvph007}
+\eta:=(\lambda+c)/(\lambda+a)\,.
+\end{equation}

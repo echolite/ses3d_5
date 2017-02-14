@@ -1,0 +1,57 @@
+\chapter{Python tools}\label{S:Python}
+
+\SES comes with a collection of Python tools for visualisation, computing source time functions and adjoint sources, and various other purposes. All of these tools are located in the \texttt{TOOLS} directory. Being within \texttt{python} or \texttt{ipython}, a instructions for the use of these tools can be obtained by simply typing \texttt{help(name of the tool)}. Required Python packages include \href{www.numpy.org}{Numpy}, \href{www.scipy.org}{Scipy}, \href{http://matplotlib.org}{Matplotlib}, \href{http://matplotlib.org/basemap/}{Basemap} and \href{www.obspy.org}{Obspy}.The following is a commented list of currently available tools:
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Visualising and editing Earth models, snapshots and kernels}
+
+\subsection{Visualising 3-D fields defined in terms of constant-property blocks}
+
+Three-dimensional fields, including Earth models, velocity snapshots and sensitivity kernels, can be visualised with the help of \texttt{models.py}, provided that they are parametrised in the form described in section \ref{S:3Dmodels}. An instance of the class \texttt{ses3d\_model} can use the function \texttt{read} to read a 3-D field from a file given in terms of the path and filename. For this, the appropriate \texttt{block\_*} files must be in that path as well. A vertical slice can be plotted using the function \texttt{plot\_slice}. 
+
+\subsection{Writing 3-D fields defined in terms of constant-property blocks}
+
+After reading a 3-D field as described in the previous paragraph, the field may be manipulated and then written again using the \texttt{write} function of the \texttt{ses3d\_model} class.
+
+\subsection{Converting 3-D fields defined in terms of constant-property blocks into vtk format}
+
+For more elaborate visualisation, for instance in \href{www.paraview.org}{Paraview} or \href{https://wci.llnl.gov/codes/visit/}{VisIt}, the 3-D fields need to be converted into the vtk format. The function \texttt{convert\_to\_vtk} of the \texttt{ses3d\_model} class performs this conversion task.
+
+\subsection{Visualising Earth models and velocity snapshots on the spectral-element grid}
+
+The Python class \texttt{ses3d\_fields} contains tools for the visualisation of Earth models and velocity field snapshots defined on the spectral-element grid of SES3D. To plot, for instance, $\vsh$ at $20$ km depth with a colourbar ranging from $2698.0$ m$/$s to $3972.0$ m$/$s with a high-resolution coastline, just type\\[5pt]
+\texttt{run ses3d\_fields.py\\
+field=ses3d\_fields('../MODELS/MODELS/','earth\_model')\\
+field.plot\_depth\_slice('vsh',20.0,2698.0,3872.0,res='h')}\\[5pt]
+Similarly, for plotting velocity field snapshots for $v_x$ at $100$ km depth and at iteration $1000$, type\\[5pt]
+\texttt{run ses3d\_fields.py\\
+field=ses3d\_fields('../DATA/OUTPUT/','velocity\_snapshot')\\
+field.plot\_depth\_slice('vx',100.0,-9e-8,9e-8,iteration=1000,res='h')}\\
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Computing source time functions}
+
+Source time functions can be computed and stored using \texttt{make\_stf.py}. Source time functions are computed as bandpass filtered Heaviside functions. \texttt{make\_stf.py} is deliberately simplistic. For real-data applications you must ensure that the bandpass applied in \texttt{make\_stf.py} is \emph{exactly} the bandpass applied to the data. Thus, you may want to adjust \texttt{make\_stf.py} to your specific needs. An example for the computation of a source time function can be found in section \ref{S:stf_NA}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Computing adjoint sources}
+
+Code for the computation of adjoint sources for some simple measurements can be found in \texttt{adjoint\_source.py}. This tools fetches an \SES seismogram, makes a measurement in a pre-defined time window, and then computes the corresponding adjoint source. In the absence of real data, only data-independent adjoint sources can be computed. The currently implemented measurements are the cross-correlation traveltime shift, relative amplitude differences, multi-taper phase shifts and multi-taper amplitude differences. A concrete example for the computation of adjoint sources is given in section \ref{S:kernels}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Computing relaxation parameters of $Q$ models}
+
+As described in chapter \ref{C:attenuation}, visco-elastic dissipation in \SES is described by a superposition of a finite number of relaxation mechanisms. The weights of these mechanisms and their respective relaxation times determine the behavior of $Q$ within a pre-defined frequency band. The Python code \texttt{Q\_discrete.py} computes these weights and relaxation times. The input parameters (frequency band, number of mechanisms, ...) must be given directly in the input section of the code, i.e. they are not passed as parameters to a function (because there are just too many parameters). A concrete example for the computation of relaxation weights and times can be found in section \ref{S:NAQ}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Rotating coordinates and moment tensors}
+
+When working with a rotated coordinate system, a little set of tools for rotating coordinates and moment tensors is useful. These can be found in \texttt{rotation.py}. \texttt{rotate\_coordinates} rotates coordinates (colatitude and longitude) and \texttt{rotate\_moment\_tensor} rotates moment tensors. A detailed description is provided in the Python code itself.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Reading and plotting seismograms}
+
+The code \texttt{seismograms.py} contains the definition of the \texttt{ses3d\_seismogram} class that can be used to read and visualise synthetic seismograms produced by \SES. A detailed example can be found in section \ref{S:NA_seismo}.

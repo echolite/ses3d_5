@@ -1,0 +1,668 @@
+\chapter{Analytical setup}\label{C:AnalyticalSetup}
+
+This chapter is concerned with the mathematical description of
+seismic wave propagation in the Earth and the derivation of
+equations that can be solved numerically in an efficient way.
+Following a brief review of the elastic wave equation and its
+subsidiary conditions in section \ref{S:wave_equation}, we elaborate
+on the simulation of anisotropy (section \ref{S:anisotropy}) and
+attenuation (section \ref{S:attenuation}). We also cover the
+implementation and analysis of absorbing boundaries within this
+chapter on the analytical setup, because their properties are
+relatively independent from a particular numerical scheme.
+
+\section{The elastic wave equation}\label{S:wave_equation}
+
+The propagation of seismic waves in the Earth can be modelled with
+the elastic wave equation
+\begin{equation}\label{E:into_waveeq001}
+\rho(\w{x})\ddot{\w{u}}(\w{x}, t) - \nabla\cdot\s{\sigma}(\w{x}, t)
+= \w{f}(\w{x}, t)\,,
+\end{equation}
+that relates the displacement field $\w{u}$ to the mass density
+$\rho$, the stress tensor $\s{\sigma}$ and an external force density
+$\w{f}$ (e.g. Dahlen \& Tromp, 1998; Kennett, 2001; Aki \& Richards, 2002). The elastic wave
+equation as presented above is a linearised version of the momentum
+balance equation, i.e., of Newton's second law. It is valid under
+the assumption that deviations from the reference configuration of
+the Earth are small. Furthermore, the rotation of the Earth and its
+self-gravitation are omitted. These effects are negligible when
+oscillation periods are shorter than $\sim 200$ s. At the surface
+$\delta\oplus$ of the Earth $\oplus$ the normal components of the
+stress tensor $\s{\sigma}$ vanish:
+\begin{equation}\label{E:into_waveeq002}
+\s{\sigma}\cdot\w{e}_r |_{\w{x}\in\partial\oplus} = \w{0}\,.
+\end{equation}
+Equation (\ref{E:into_waveeq002}) is the free surface boundary
+condition. Both the displacement field $\w{u}$ and the velocity
+field $\w{v}=\dot{\w{u}}$ are required to vanish prior to $t=t_0$
+when the external force $\w{f}$ starts to act, i.e.,
+\begin{equation}\label{E:into_waveeq003}
+\w{u}|_{t<t_0}=\w{v}|_{t<t_0}=\w{0}\,.
+\end{equation}
+For convenience we will mostly choose $t_0=0$. To obtain a complete
+set of equations, the stress tensor $\s{\sigma}$ has to be related
+to the displacement field $\w{u}$. It is usually assumed that the
+rheology is visco-elastic, meaning that the current stress tensor
+$\s{\sigma}$ depends linearly on the history of the strain tensor
+$\s{\epsilon}=\frac{1}{2}(\nabla \w{u} + \nabla \w{u}^T)$:
+\begin{equation}\label{E:intro_waveeq004}
+\s{\sigma}(\w{x}, t) = \int\limits_{-\infty}^{\infty}
+\w{\dot{C}}(\w{x}, t-t'):\s{\epsilon}(\w{x}, t')\,dt'\,.
+\end{equation}
+The fourth order tensor $\w{C}$ is the elastic tensor. In the case
+of a perfectly elastic medium the elastic tensor is of the form
+$\w{C}(\w{x},t)=\w{C}(\w{x})\,H(t)$, where $H$ is the Heaviside
+function. We then have $\s{\sigma}=\w{C}(\w{x}):\s{\epsilon}(\w{x},
+t)$. The symmetry of $\s{\epsilon}$, the conservation of angular
+momentum and the relation of $\w{C}$ to the internal energy (e.g.
+Dahlen \& Tromp, 1998) require that the components of $\w{C}$
+satisfy the following symmetry relations:
+\begin{equation}\label{E:intro_waveeq005}
+C_{ijkl}=C_{klij}=C_{jikl}\,.
+\end{equation}
+Moreover, the elastic tensor is causal:
+\begin{equation}\label{E:into_waveeq006}
+\w{C}(t)|_{t<t_0}=\w{0}\,.
+\end{equation}
+Equation (\ref{E:intro_waveeq004}) is $-$ unlike the wave equation
+within its limits of validity $-$ not a fundamental law of physics
+but an empirical relation that has been found to describe a wide
+range of phenomena very well. It can be regarded as a linearisation
+of a more general non-linear constitutive relation. Its validity is,
+in this sense, restricted to scenarios where the strain tensor
+$\s{\epsilon}$ is a small quantity. The particular choices of
+$\w{C}$ and its time dependence will be the subjects of the
+following sections on attenuation and anisotropy.
+
+\section{Anisotropy}\label{S:anisotropy} 
+Anisotropy is the dependence of the elastic tensor on the orientation of the
+coordinate system. Its most direct seismological expression is the
+dependence of seismic velocities on the propagation and polarisation
+directions of elastic waves. It is thought to play a major role in the Earth's crust and upper mantle.\\
+Besides the splitting of shear waves, the Love wave-Rayleigh wave
+discrepancy is one of the principal seismic observations that is
+directly related to anisotropy: A Love wave and a Rayleigh wave
+travelling in the same direction usually exhibit different wave
+speeds as a consequence of their different polarisations. This led
+to the inclusion of anisotropy with radial symmetry axis in the
+global reference model PREM (Dziewonski \& Anderson, 1981). In this
+model the anisotropy
+is limited to the upper 220 km.\\
+Guided by these observations, we decided to implement anisotropy
+with radial symmetry axis. For such a medium, there are only 5
+independent elastic tensor components that are different from zero.
+They can be summarised in a $6\times 6$ matrix (e.g. Babuska \& Cara, 1991):
+\begin{align}\label{E:setup15}
+&\begin{pmatrix}
+C_{r r r r} & C_{r r \phi \phi} & C_{r r \theta \theta} & C_{r r \phi \theta} & C_{r r r \theta} & C_{r r r \phi} \\
+C_{\phi \phi r r} & C_{\phi \phi \phi \phi} & C_{\phi \phi \theta \theta} & C_{\phi \phi \phi \theta} & C_{\phi \phi r \theta} & C_{\phi \phi r \phi} \\
+C_{\theta \theta r r} & C_{\theta \theta \phi \phi} & C_{\theta \theta \theta \theta} & C_{\theta \theta \phi \theta} & C_{\theta \theta r \theta} & C_{\theta \theta r \phi} \\
+C_{\phi \theta r r} & C_{\phi \theta \phi \phi} & C_{\phi \theta \theta \theta} & C_{\phi \theta \phi \theta} & C_{\phi \theta r \theta} & C_{\phi \theta r \phi} \\
+C_{r \theta r r} & C_{r \theta \phi \phi} & C_{r \theta \theta \theta} & C_{r \theta \phi \theta} & C_{r \theta r \theta} & C_{r \theta r \phi} \\
+C_{r \phi r r} & C_{r \phi \phi \phi} & C_{r \phi \theta \theta} &
+C_{r \phi \phi \theta} & C_{r \phi r \theta} & C_{r \phi r \phi}
+\end{pmatrix}\notag\\
+=&
+\begin{pmatrix}
+\lambda+2\mu & \lambda+c & \lambda+c & 0 & 0 & 0 \\
+\lambda+c & \lambda+2\mu+a & \lambda+a & 0 & 0 & 0 \\
+\lambda+c & \lambda+a & \lambda+2\mu+a & 0 & 0 & 0 \\
+0 & 0 & 0 & \mu & 0 & 0 \\
+0 & 0 & 0 & 0 & \mu+b & 0 \\
+0 & 0 & 0 & 0 & 0 & \mu+b
+\end{pmatrix}
+\end{align}
+Love (1892) proposed an alternative parametrisation
+\begin{align}\label{E:setup15b}
+&\begin{pmatrix}
+C_{r r r r} & C_{r r \phi \phi} & C_{r r \theta \theta} & C_{r r \phi \theta} & C_{r r r \theta} & C_{r r r \phi} \\
+C_{\phi \phi r r} & C_{\phi \phi \phi \phi} & C_{\phi \phi \theta \theta} & C_{\phi \phi \phi \theta} & C_{\phi \phi r \theta} & C_{\phi \phi r \phi} \\
+C_{\theta \theta r r} & C_{\theta \theta \phi \phi} & C_{\theta \theta \theta \theta} & C_{\theta \theta \phi \theta} & C_{\theta \theta r \theta} & C_{\theta \theta r \phi} \\
+C_{\phi \theta r r} & C_{\phi \theta \phi \phi} & C_{\phi \theta \theta \theta} & C_{\phi \theta \phi \theta} & C_{\phi \theta r \theta} & C_{\phi \theta r \phi} \\
+C_{r \theta r r} & C_{r \theta \phi \phi} & C_{r \theta \theta \theta} & C_{r \theta \phi \theta} & C_{r \theta r \theta} & C_{r \theta r \phi} \\
+C_{r \phi r r} & C_{r \phi \phi \phi} & C_{r \phi \theta \theta} &
+C_{r \phi \phi \theta} & C_{r \phi r \theta} & C_{r \phi r \phi}
+\end{pmatrix}\notag\\
+=&
+\begin{pmatrix}
+C_L & F_L & F_L & 0 & 0 & 0 \\
+F_L & A_L & A_L-2N_L & 0 & 0 & 0 \\
+F_L & A_L-2N_L & A_L & 0 & 0 & 0 \\
+0 & 0 & 0 & N_L & 0 & 0 \\
+0 & 0 & 0 & 0 & L_L & 0 \\
+0 & 0 & 0 & 0 & 0 & L_L
+\end{pmatrix}
+\end{align}
+We chose to use the parametrisation from equation (\ref{E:setup15})
+because it easily allows us to model isotropy by simply setting
+$a=b=c=0$. Remember, that all components of the elastic tensor are
+functions of time, $t$, and space, $\w{x}$. Density, $\rho$ and the
+elastic parameters $\lambda, \mu, a, b$ and $c$ can be related to
+the wave speeds of SH, SV, PH and PV waves:
+\begin{equation}\label{E:svsh17}
+\vsv=\sqrt{\frac{\mu+b}{\rho}}\,,\quad
+\vsh=\sqrt{\frac{\mu}{\rho}}\,,\quad
+\vpv=\sqrt{\frac{\lambda+2\mu}{\rho}}\,,\quad
+\vph=\sqrt{\frac{\lambda+2\mu+a}{\rho}}\,.
+\end{equation}
+The velocities of SH, SV, PH and PV waves specify only two of the
+three additional elastic parameters necessary for anisotropy with
+radial symmetry axis, namely $a$ and $b$. Also radially propagating
+S waves do not allow us to find $c$, because they propagate with the
+velocity $\sqrt{(\mu+b)/\rho}$, just as SV waves. In fact, using
+plane waves, $c$ can be determined only from P waves that do not
+travel in exactly radial or horizontal directions. Following
+Takeuchi \& Saito (1972) and Dziewonski \& Anderson (1981) we
+incorporate $c$ into a dimensionless parameter
+\begin{equation}\label{E:pvph007}
+\eta:=(\lambda+c)/(\lambda+a)\,.
+\end{equation}
+
+\section{Attenuation}\label{S:attenuation}
+
+The numerical implementation of attenuation is largely motivated by
+technical convenience and not so much by the true physics of seismic
+wave attenuation in the interior of the Earth. In our analysis we closely follows Robertsson et al. (1994).\\
+Assume that $\sigma, C$ and $\epsilon$ are representative of some
+particular components of $\s{\sigma}, \w{C}$ and $\s{\epsilon}$,
+respectively. Then a scalar version of the stress-strain relation is
+given by
+\begin{equation}\label{E:setup16}
+\dot{\sigma}(t) = (\dot{C}*\dot{\epsilon})(t) =
+\int\limits_{-\infty}^{\infty} \dot{C}(t-t') \dot{\epsilon}(t')\,
+dt'\,.
+\end{equation}
+The spatial dependence has been omitted for brevity. As already
+discussed, we choose the stress relaxation function or elastic
+tensor component $C$ to be that of a superposition of $N$ standard
+linear solids, i.e.,
+\begin{equation}\label{E:setup17}
+C(t) := C_r \left[ 1- \frac{1}{N} \sum_{p=1}^{N} \left( 1-
+\frac{\tau_{\epsilon p}}{\tau_{\sigma p}}\right)\,e^{-t/\tau_{\sigma
+p}}\right] \, H(t)\,,
+\end{equation}
+where $\tau_{\epsilon p}$ and $\tau_{\sigma p}$ are the strain and
+stress relaxation times of the $p$th standard linear solid,
+respectively. The symbol $H$ denotes the Heaviside function and
+$C_r$ is the relaxed modulus. Equation (\ref{E:setup17}) is very
+general so that  different sets of relaxation times can give almost
+the same relaxation function $C(t)$. To reduce this subjectively
+undesirable non-uniqueness we limit the number of free parameters.
+Following the $\tau$-method introduced by Blanch et al. (1995) we
+determine the relaxation times $\tau_{\epsilon p}$ by defining a
+dimensionless variable $\tau$ through
+\begin{equation}\label{E:setup18}
+\tau := \frac{\tau_{\epsilon p}}{\tau_{\sigma p}} -1\, .
+\end{equation}
+This gives
+\begin{equation}\label{E:setup19}
+C(t) = C_r \left[ 1+\frac{\tau}{N} \sum_{p=1}^{N} e^{-t/\tau_{\sigma
+p}} \right]\, H(t)\,.
+\end{equation}
+Differentiating (\ref{E:setup19}) with respect to $t$ and
+introducing the result into equation (\ref{E:setup16}) yields
+\begin{equation}\label{E:setup20}
+\dot{\sigma}(t) = C_r (1+\tau)\,\dot{\epsilon}(t) + C_r
+\sum_{p=1}^{N} M_p\,,
+\end{equation}
+where the memory variables $M_p$ are defined by
+\begin{equation}\label{E:setup21}
+M_p := -\frac{\tau}{N \tau_{\sigma
+p}}\,\int\limits_{-\infty}^{\infty} e^{-(t-t')/\tau_{\sigma p}}\,
+H(t-t')\,\dot{\epsilon}(t')\, dt'\,.
+\end{equation}
+The differentiation of (\ref{E:setup21}) with respect to time yields
+a set of first-order differential equations for the memory
+variables:
+\begin{equation}\label{E:setup22}
+\dot{M_p} = -\frac{\tau}{N \tau_{\sigma p}} \, \dot{\epsilon} -
+\frac{1}{\tau_{\sigma p}}\, M_p\,.
+\end{equation}
+Anelasticity can thus be modelled by simultaneously sloving the
+momentum equation, a modified stress-strain relation and a set of
+$N$ ordinary differential equations for the memory variables $M_p$.
+The memory variables are formally independent of the elastic
+parameter $C_r$. This formulation, proposed by Moczo \& Kristek
+(2005),
+gives more accurate results in the case of strong attenuation heterogeneities than the classical formulation by Robertsson et al. (1994).\\
+In seismology there has traditionally been more emphasis on the
+quality factor Q than on particular stress or strain relaxation
+functions. The definition of $Q$ is based on the definition of the
+complex modulus
+\begin{equation}\label{E:setup28}
+\tilde{C}(\nu) := \w{i}\,\nu\,\int_{0}^{\infty} C(t)\,e^{-\w{i}\nu
+t}\, dt\,,
+\end{equation}
+with $\nu:=\omega+\w{i}\gamma$. Then
+\begin{equation}\label{E:setup29}
+Q(\omega) :=
+\frac{\frak{Re}\,\tilde{C}(\omega)}{\frak{Im}\,\tilde{C}(\omega)}\,.
+\end{equation}
+When $\frak{Im}\,\tilde{C}(\omega) \ll \frak{Re}\,\tilde{C}(\omega)$
+then Q can be interpreted in terms of the maximum elastic energy
+$E_{max}$ and the energy that is dissipated per cycle, $E_{diss}$:
+\begin{equation}\label{E:setup30}
+E_{diss} / E_{max} = 4\pi Q^{-1}\,.
+\end{equation}
+For our stress relaxation function defined in equation
+(\ref{E:setup19}) we find
+\begin{equation}\label{E:setup31}
+Q(\omega) = \frac{\sum_{p=1}^{N} \left( 1+ \frac{\omega^2
+\tau_{\sigma p}^2\tau}{1+\omega^2 \tau_{\sigma p}^2} \right)}{
+\sum_{p=1}^{N} \left( \frac{\omega \tau_{\sigma p}
+\tau}{1+\omega^2\tau_{\sigma p}^2} \right)}\,.
+\end{equation}
+Generalising equations (\ref{E:setup20}) and (\ref{E:setup22}) to
+the case of a three-dimensional and anisotropic medium with radial
+symmetry axis is straightforward. The component-wise stress-strain
+relation in the absence of dissipation is given by the following set
+of equations:
+\begin{subequations}\label{E:setup32}
+\begin{align}
+\sigma_{rr}&=(\kappa-2\mu/3)(\epsilon_{rr}+\epsilon_{\theta\theta}+\epsilon_{\phi\phi})+2\mu\epsilon_{rr}+c(\epsilon_{\theta\theta}+\epsilon_{\phi\phi})\\
+\sigma_{\phi\phi}&=(\kappa-2\mu/3)(\epsilon_{rr}+\epsilon_{\theta\theta}+\epsilon_{\phi\phi})+2\mu\epsilon_{\phi\phi}+c\epsilon_{rr}+a(\epsilon_{\theta\theta}+\epsilon_{\phi\phi})\\
+\sigma_{\theta\theta}&=(\kappa-2\mu/3)(\epsilon_{rr}+\epsilon_{\theta\theta}+\epsilon_{\phi\phi})+2\mu\epsilon_{\theta\theta}+c\epsilon_{rr}+a(\epsilon_{\theta\theta}+\epsilon_{\phi\phi})\\
+\sigma_{r\phi}&=2(\mu+b)\epsilon_{r\phi}\\
+\sigma_{r\theta}&=2(\mu+b)\epsilon_{r\theta}\\
+\sigma_{\phi\theta}&=2\mu\epsilon_{\phi\theta}
+\end{align}
+\end{subequations}
+We introduced the bulk modulus $\kappa=\lambda+\frac{2}{3}\mu$
+because it is $-$ in contrast to the Lam\'{e} parameter $\lambda$ $-$
+physically interpretable.\footnote{\textsf{There is, to the best of
+my knowledge, no physical interpretation of $\lambda$. The
+unphysical nature of this parameter becomes most apparent through
+the fact that the $Q$ factor associated with $\lambda$, denoted by
+$Q_\lambda$, can be negative for positive $Q_\mu$ and $Q_\kappa$.
+Thus, if there were a physical process, e.g. an elastic wave, that
+depended only on $\lambda$ and $\rho$, then this process would go
+hand in hand with a continuously growing elastic energy.}} The
+transition to the dissipative medium is now made by analogy:
+\begin{subequations}\label{E:setup33}
+\begin{align}
+\dot{\sigma}_{rr}&=\left[\kappa_r
+(1+\tau_\kappa)-\frac{2}{3}\mu_r(1+\tau_\mu)\right]\,(\dot{\epsilon}_{rr}+\dot{\epsilon}_{\theta\theta}+\dot{\epsilon}_{\phi\phi})+2\mu_r(1+\tau_\mu)\dot{\epsilon}_{rr}+c(\dot{\epsilon}_{\theta\theta}+\dot{\epsilon}_{\phi\phi})\notag\\
+&+\kappa_r\sum_{p=1}^N \left(
+K_{p}^{rr}+K_{p}^{\theta\theta}+K_{p}^{\phi\phi}\right)
+-\frac{2}{3}\mu_r \sum_{p=1}^{N} \left(
+M_p^{\theta\theta}+M_p^{\phi\phi} \right) + \frac{4}{3} \mu_r
+\sum_{p=1}^{N} M_p^{rr}\\
+\dot{\sigma}_{\phi\phi}&=\left[\kappa_r
+(1+\tau_\kappa)-\frac{2}{3}\mu_r(1+\tau_\mu)\right]\,(\dot{\epsilon}_{rr}+\dot{\epsilon}_{\theta\theta}+\dot{\epsilon}_{\phi\phi})+2\mu_r(1+\tau_\mu)\dot{\epsilon}_{\phi\phi}+c\dot{\epsilon}_{rr}+a(\dot{\epsilon}_{\theta\theta}+\dot{\epsilon}_{\phi\phi})\notag\\
+&+\kappa_r\sum_{p=1}^N \left(
+K_{p}^{rr}+K_{p}^{\theta\theta}+K_{p}^{\phi\phi}\right)-\frac{2}{3}\mu_r
+\sum_{p=1}^{N}
+\left(M_p^{rr}+M_p^{\theta\theta}\right)+\frac{4}{3}\mu_r
+\sum_{p=1}^{N} M_p^{\phi\phi}\\
+\dot{\sigma}_{\theta\theta}&=\left[\kappa_r
+(1+\tau_\kappa)-\frac{2}{3}\mu_r(1+\tau_\mu)\right]\,(\dot{\epsilon}_{rr}+\dot{\epsilon}_{\theta\theta}+\dot{\epsilon}_{\phi\phi})+2\mu_r(1+\tau_\mu)\dot{\epsilon}_{\theta\theta}+c\dot{\epsilon}_{rr}+a(\dot{\epsilon}_{\theta\theta}+\dot{\epsilon}_{\phi\phi})\notag\\
+&+\kappa_r\sum_{p=1}^N \left(
+K_{p}^{rr}+K_{p}^{\theta\theta}+K_{p}^{\phi\phi}\right)-\frac{2}{3}\mu_r
+\sum_{p=1}^{N} \left(M_p^{rr}+M_p^{\phi\phi}\right)+\frac{4}{3}\mu_r
+\sum_{p=1}^{N} M_p^{\theta\theta}\\
+\dot{\sigma}_{r\phi}&=2\mu_r(1+\tau_\mu)\dot{\epsilon}_{r\phi}+2b\dot{\epsilon}_{r\phi}+2\mu_r\sum_{p=1}^{N}
+M_p^{r\phi}\\
+\dot{\sigma}_{r\theta}&=2\mu_r(1+\tau_\mu)\dot{\epsilon}_{r\theta}+2b\dot{\epsilon}_{r\phi}+2\mu_r\sum_{p=1}^{N}
+M_p^{r\theta}\\
+\dot{\sigma}_{\phi\theta}&=2\mu_r(1+\tau_\mu)\dot{\epsilon}_{\phi\theta}+2\mu_r
+\sum_{p=1}^{N} M_p^{\phi\theta}
+\end{align}
+\end{subequations}
+For equations (\ref{E:setup33}) we assumed that the parameters $a,
+b$ and $c$ are not involved in the dissipation of elastic energy.
+The memory variables associated with $\mu$ $-$ denoted by $M_p^{ij}$
+$-$ and the memory variables associated with $\kappa$ $-$ denoted by
+$K_p^{ij}$ $-$ are governed by the first-order differential
+equations
+\begin{align}\label{E:setup34}
+\dot{M}_p^{ij}&=-\frac{\tau_\mu}{N\tau_{\sigma p, \mu}}
+\dot{\epsilon}_{ij} - \frac{1}{\tau_{\sigma p,\mu}} M_{p}^{ij}\\
+\dot{K}_p^{ij}&=-\frac{\tau_\kappa}{N\tau_{\sigma p, \kappa}}
+\dot{\epsilon}_{ij} - \frac{1}{\tau_{\sigma p,\kappa}} K_{p}^{ij}
+\end{align}
+The above description of anelasticity is computationally inexpensive
+compared to the spatial discretisation of the equations of motion
+which account for the largest portion of the computational costs.
+
+\section{Absorbing boundaries}\label{S:absbound_theo}
+
+Restricting the considered spatial domain to only a part of the true physical
+domain in the interest of computational efficiency, introduces
+unrealistic boundaries. If not treated adequately, the reflections
+from the artificial boundaries dominate the numerical error. The
+most widely used solutions for this problem fall into two
+categories: \emph{absorbing boundary conditions} and \emph{absorbing
+boundary layers}.\\
+Absorbing boundary conditions are usually based on paraxial
+approximations of the wave equation. Early applications of this
+technique to finite-difference modelling can be found in Clayton \&
+Engquist (1977) or in Stacey (1988). Along the artificial boundary the wave
+equation is replaced by one of its paraxial approximations of order
+$n$, typically not higher than one or two. The reflection
+coefficient then behaves as $(\sin \phi)^n$, where $\phi$ is the
+angle of incidence. Absorbing boundary conditions therefore become
+inefficient for large angles of incidence in general and for surface
+waves in particular. Moreover, they suffer from numerical stability
+problems.\\
+Absorbing boundary layers are regions near the unphysical boundaries
+where the wave field is artificially attenuated in order to prevent
+reflections. Cerjan et al. (1985) proposed to multiply the wave
+field in each time step with a Gaussian damping function. While this
+technique proves to be efficient for finite-difference methods, it
+leads to unacceptably large boundary layers when high-order methods
+such as the spectral-element method are used. Robertsson et al.
+(1994) suggested that the absorption could be improved through
+physical dissipation, i.e., a very low $Q$ inside the boundary
+layers. This, however, leads to reflections from the boundary layer
+itself because low $Q$ values effectively change the elastic
+properties of the medium.\\
+A comparatively efficient boundary layer technique was introduced by
+B\'{e}renger (1994), who proposed to modify the electrodynamic wave
+equation inside a \emph{perfectly matched layer} (PML) such that the
+solutions decay exponentially with distance, without producing
+reflections from the boundary between the regular medium and the
+PML. Though originally designed for first-order systems of
+differential equations - such as the elastodynamic equations in
+stress-velocity formulation (see e.g. Collino \& Tsogka, 2001 or
+Festa \& Vilotte, 2005) - it has been shown that the method can be
+extended to second-order systems (Komatitsch \& Tromp, 2003). The
+classical PML approach leads to a new and generally larger system of
+differential equations. Therefore, existing codes have to be
+substantially modified. This complication can be avoided by using
+\emph{anisotropic perfectly matched layers} (APML), studied for
+example by Teixeira \& Chew (1997) and Zheng \& Huang (1997). \SES implements the APML, which are described in the following paragraphs.\\[5pt]
+The elastic wave equation in the frequency domain is given by
+\begin{subequations}\label{E:apml001}
+\begin{align}
+\w{i}\omega \rho \w{v}(\w{x},\omega) &= \nabla\cdot\s{\sigma}(\w{x},
+\omega) + \w{f}(\w{x},\omega)\,,\label{E:apml001a}\\
+\w{i}\omega \s{\sigma}(\w{x},\omega) &=
+\s{\Xi}(\w{x},\omega):\nabla \w{v}(\w{x},\omega)\,,\label{E:apml001b}\\
+\w{i}\omega \w{u}(\w{x},\omega) &=
+\w{v}(\w{x},\omega)\,.\label{E:apml001c}
+\end{align}
+\end{subequations}
+We introduced the symbol $\s{\Xi}$ for the rate of relaxation tensor
+$\dot{\w{C}}$ in equations (\ref{E:apml001}). In a homogeneous and
+isotropic medium and when external forces are absent, it is known to
+have plane wave solutions of the form
+\begin{equation}\label{E:apml002}
+\w{u}(\w{x},\omega)=\w{A}\,e^{-\w{i}\w{k}(\omega)\cdot \w{x}}\,,
+\end{equation}
+with either
+\begin{subequations}
+\begin{align}
+&\w{A}\,\, ||\,\, \w{k}(\omega)\quad\text{and}\quad
+||\w{k}(\omega)||^2=\frac{\rho\omega^2}{\lambda+2\mu}=\frac{\omega^2}{\vp^2}\,\quad&&\text{(P-wave)}\,\quad\text{or}\,\label{E:apml003}\\
+&\w{A}\perp\w{k}(\omega)\quad\text{and}\quad
+||\w{k}(\omega)||^2=\frac{\rho\omega^2}{\mu}=\frac{\omega^2}{\vs^2}\,\quad&&\text{(S-wave)}\,.\label{E:apml004}
+\end{align}
+\end{subequations}
+Our goal is to modify (\ref{E:apml001}) such that it allows for
+plane wave solutions that decay exponentially with distance, say for
+example, in increasing $z$ direction. For this, the cartesian
+coordinate $z$ is replaced by a new variable
+$\tilde{z}:=\tilde{z}(\w{x},\gamma_z(\w{x}))$, such that the
+resulting solutions are
+\begin{equation}\label{E:apml005}
+\w{u}(\w{x}, \omega)=
+\w{A}\,e^{-\w{i}\w{k}(\omega)\cdot\w{x}}\,e^{-f(\gamma_z) z}\,,
+\end{equation}
+for $z>0$ and some function $f$ that depends on the particular
+choice of $\gamma_z$. Choosing $f(\gamma_z)|_{z<0}=0$ will leave the
+solution in $z<0$ unchanged. We use the coordinate transformation
+\begin{equation}\label{E:apml006}
+\tilde{z}:=\int\limits_{0}^{z} \gamma_z(x, y, z') dz'\,.
+\end{equation}
+Outside the perfectly matched layer, that is in our case for $z<0$,
+we require $\tilde{z}=z$ or equivalently $\gamma_z(\w{x})=1$. To
+obtain exponentially decaying plane waves also in the remaining
+coordinate directions, the transformations $x\to\tilde{x}$ and
+$y\to\tilde{y}$ are defined analogously. Replacing the derivatives
+$\partial_x$, $\partial_y$ and $\partial_z$ in (\ref{E:apml001a}) by
+the derivatives $\partial_{\tilde{x}}$, $\partial_{\tilde{y}}$ and
+$\partial_{\tilde{z}}$, gives the following set of equations,
+\begin{subequations}\label{E:apml007}
+\begin{align}
+\w{i}\omega\rho v_x &= \gamma_x^{-1} \partial_x \sigma_{xx} +
+\gamma_y^{-1} \partial_y \sigma_{yx} + \gamma_z^{-1} \partial_z
+\sigma_{zx}\,,\label{E:apml007a}\\
+\w{i}\omega\rho v_y &= \gamma_x^{-1} \partial_x \sigma_{xy} +
+\gamma_y^{-1} \partial_y \sigma_{yy} + \gamma_z^{-1} \partial_z
+\sigma_{zy}\,,\label{E:apml007b}\\
+\w{i}\omega\rho v_z &= \gamma_x^{-1} \partial_x \sigma_{xz} +
+\gamma_y^{-1} \partial_y \sigma_{yz} + \gamma_z^{-1} \partial_z
+\sigma_{zz}\,.\label{E:apml007c}
+\end{align}
+\end{subequations}
+Note that the divergence in equation (\ref{E:apml001a}) is
+interpreted as a left-divergence in equations (\ref{E:apml007}).
+Multiplication by $\gamma_x \gamma_y \gamma_z$ yields
+\begin{subequations}\label{E:apml008}
+\begin{align}
+\w{i}\omega \gamma_x \gamma_y \gamma_z v_x &= \gamma_y \gamma_z
+\partial_x \sigma_{xx} + \gamma_x \gamma_z \partial_y \sigma_{yx} +
+\gamma_x \gamma_y \partial_z \sigma_{zx}\,,\label{E:apml008a}\\
+\w{i}\omega \gamma_x \gamma_y \gamma_z v_y &= \gamma_y \gamma_z
+\partial_x \sigma_{xy} + \gamma_x \gamma_z \partial_y \sigma_{yy} +
+\gamma_x \gamma_y \partial_z \sigma_{zy}\,,\label{E:apml008b}\\
+\w{i}\omega \gamma_x \gamma_y \gamma_z v_z &= \gamma_y \gamma_z
+\partial_x \sigma_{xz} + \gamma_x \gamma_z \partial_y \sigma_{yz} +
+\gamma_x \gamma_y \partial_z \sigma_{zz}\,.\label{E:apml008c}
+\end{align}
+\end{subequations}
+The products $\gamma_i \gamma_j$ on the left-hand sides of
+(\ref{E:apml008}) can be placed under the differentiation if
+$\gamma_x$ depends only on $x$, $\gamma_y$ only on $y$ and
+$\gamma_z$ only on $z$. We may then write the new version of
+(\ref{E:apml001a}) as
+\begin{equation}\label{E:apml009}
+\w{i}\omega \gamma_x \gamma_y \gamma_z \w{v} = \nabla\cdot
+\s{\sigma}^{\text{pml}}\,,
+\end{equation}
+with the definition
+\begin{equation}\label{E:apml010}
+\s{\sigma}^{\text{pml}} := \gamma_x \gamma_y \gamma_z \left(
+  \begin{array}{ccc}
+    \gamma_x^{-1} & 0 & 0 \\
+    0 & \gamma_y^{-1} & 0 \\
+    0 & 0 & \gamma_z^{-1} \\
+  \end{array}
+\right) \cdot \s{\sigma} = \gamma_x \gamma_y \gamma_z
+\s{\Lambda}\cdot\s{\sigma}\,.
+\end{equation}
+Since (\ref{E:apml001a}) and (\ref{E:apml009}) are very similar, the
+anisotropic perfectly matched layers can be implemented with
+relative ease by slightly modifying pre-existing codes. It is
+noteworthy at this point that $\s{\sigma}^{\text{pml}}$ is in
+general not symmetric.\\
+In the next step we consider the constitutive relation. Based on
+(\ref{E:apml001b}) and (\ref{E:apml001c}) we find
+\begin{equation}\label{E:apml011}
+\sigma_{ij}^{\text{pml}} = \gamma_x \gamma_y \gamma_z \gamma_i^{-1}
+\sigma_{ij} = \gamma_x \gamma_y \gamma_z \gamma_i^{-1}
+\sum_{k,l=1}^{3} \Xi_{ijkl} \partial_{x_k} u_l\,.
+\end{equation}
+Again replacing $\partial_x$, $\partial_y$ and $\partial_z$ by
+$\partial_{\tilde{x}}$, $\partial_{\tilde{y}}$ and
+$\partial_{\tilde{z}}$, yields
+\begin{equation}\label{E:apml012}
+\sigma_{ij}^{\text{pml}}=  \gamma_x \gamma_y \gamma_z \gamma_i^{-1}
+\sum_{k,l=1}^{3} \Xi_{ijkl} \gamma_k^{-1} \partial_{x_k} u_l\,.
+\end{equation}
+For convenience we define a new strain tensor
+$\s{\epsilon}^{\text{pml}}$ as
+\begin{equation}\label{E:apml013}
+\epsilon_{kl}^{\text{pml}} :=  \gamma_x \gamma_y \gamma_z
+\gamma_k^{-1} \partial_{x_k} u_l\,,
+\end{equation}
+which finally leads to our modified version of the wave equation:
+\begin{subequations}\label{E:apml014}
+\begin{align}
+\w{i}\omega \rho \gamma_x \gamma_y \gamma_z v_i &= \sum_{j=1}^{3}
+\partial_{x_j} \sigma_{ji}^{\text{pml}}\,,\label{E:apml014a}\\
+\gamma_i \sigma_{ij}^{\text{pml}} &= \sum_{k,l=1}^{3} \Xi_{ijkl}
+\epsilon_{kl}^{\text{pml}}\,,\label{E:apml014b}\\
+\epsilon_{kl}^{\text{pml}} &=  \gamma_x \gamma_y \gamma_z
+\gamma_k^{-1} \partial_{x_k} u_l\,.\label{E:apml014c}
+\end{align}
+\end{subequations}
+The source term in (\ref{E:apml014}) is omitted because the PML
+region will usually be chosen such that the sources are inside the
+regular medium and not inside the PML.\\[10pt]
+To demonstrate that exponentially decaying plane waves are indeed
+solutions of (\ref{E:apml014}) we consider a homogeneous and
+isotropic medium. For simplicity, we restrict the analysis to the
+case $\gamma_x=\gamma_y=1$, $\gamma_z = const \neq 1$. Assuming a
+plane wave solution of the form
+\begin{equation}\label{E:apml015}
+\w{u}(\w{x},\omega)= \w{A}\,e^{-\w{i}(k_x x + k_z z ) }\,,
+\end{equation}
+the problem reduces to finding the dispersion relation
+$\w{k}=\w{k}(\omega)$. The Christoffel equation resulting from the
+combination of (\ref{E:apml014}) with (\ref{E:apml015}) is
+\begin{equation}\label{E:apml016}
+\left(
+  \begin{array}{ccc}
+    \vp^2 k_x^2 +\vs^2 k_z^2 \gamma_z^{-2} & 0 & (\vp^2-\vs^2)(k_x k_z \gamma_z^{-1}) \\
+    0 & \vs^2 (k_x^2 + k_z^2 \gamma_z^{-2}) & 0 \\
+    (\vp^2-\vs^2)(k_x k_z \gamma_z^{-1}) & 0 & \vp^2 k_z^2 \gamma_z^{-2} + \vs^2 k_x^2 \\
+  \end{array}
+\right) \left(
+  \begin{array}{c}
+    A_x \\
+    A_y \\
+    A_z \\
+  \end{array}
+\right)
+ = \omega^2 \left(
+                     \begin{array}{c}
+                       A_x \\
+                       A_y \\
+                       A_z \\
+                     \end{array}
+                   \right)\,.
+\end{equation}
+Non-trivial solutions exist only if either
+\begin{subequations}\label{E:apml017}
+\begin{equation}\label{E:apml018}
+k_x^2+k_z^2 \gamma_z^{-2} = \omega^2 \vp^{-2}\,
+\end{equation}
+or
+\begin{equation}\label{E:apml019}
+k_x^2+k_z^2 \gamma_z^{-2} = \omega^2 \vs^{-2}\,
+\end{equation}
+\end{subequations}
+are satisfied. Equations (\ref{E:apml018}) and (\ref{E:apml019}) are
+the dispersion relations inside the PML. The resulting plane wave
+solutions are
+\begin{subequations}\label{E:apml020}
+\begin{equation}
+\w{u}_s(\w{x},\omega)=\w{A}_s\,e^{-\w{i} \omega
+(x\,\sin\phi+\gamma_z z\,\cos\phi)/\vs}\,,\quad \w{A}_s\perp (k_x,
+0, k_z\gamma_z^{-1})^T\,,
+\end{equation}
+for the S wave and
+\begin{equation}
+\w{u}_p(\w{x},\omega)=\w{A}_p\,e^{-\w{i} \omega
+(x\,\sin\phi+\gamma_z z\,\cos\phi)/\vp}\,,\quad \w{A}_p\,||\, (k_x,
+0, k_z\gamma_z^{-1})^T\,,
+\end{equation}
+\end{subequations}
+for the P wave. The variable $\phi$ denotes the angle of incidence.
+One may now define the coordinate stretching variable $\gamma_z$.
+There are in principle no restrictions other than $\gamma_z=1$
+outside the PML. We use
+\begin{equation}\label{E:apml021}
+\gamma_z(\w{x}):=1+\frac{a_z}{\w{i}\omega}\,.
+\end{equation}
+Inserting (\ref{E:apml021}) into (\ref{E:apml020}) yields
+\begin{equation}\label{E:apml022}
+\w{u}_{s/p}(\w{x},\omega)=\w{A}_{s/p}\,e^{-\w{i} \omega (x\,\sin\phi
++
+z\,\cos\phi)/v_\text{\tiny{S/P}}}\,e^{-(a_z\,z\cos\phi)/v_\text{\tiny{S/P}}}\,.
+\end{equation}
+The exponential decay is therefore frequency-independent in the case
+of incident body waves. A frequency-dependent decay can be expected
+for dispersive waves such as surface waves. However, waves with an
+angle of incidence, $\phi$, close to $\pm \pi/2$ will decay slower
+than waves with an angle of incidence close to $0$. It should be
+noted that the example of a homogeneous and isotropic medium with
+constant $\gamma_z$ is oversimplified. Since analytical solutions
+for more complex models are usually unavailable, the efficiency of
+the APML
+technique must be tested numerically.\\[5pt]
+With the exception of the corners of the
+model\footnote{\textsf{There is, to the best of my knowledge, no PML
+variant where the corners are treated adequately. In the corners two
+or more PMLs overlap, and it is not immediately clear what the
+consequences are. In fact, numerical experiments show that the
+instability tends to start in the corners. This suggests that PML
+methods might be improved substantially through the construction of
+absorbing corners where elastic waves do indeed decay.}}, the
+damping regions at the $x$, $y$ and $z$ boundaries do not overlap.
+We therefore find
+\begin{equation}\label{E:apml023}
+a_i a_j = a_i^2 \delta_{ij}
+\end{equation}
+and
+\begin{equation}\label{E:apml024}
+\gamma_x \gamma_y \gamma_z = \frac{\w{i}\omega + a_x + a_y +
+a_z}{\w{i}\omega}\,.
+\end{equation}
+The resulting equations of motion in the frequency domain are now
+\begin{subequations}\label{E:apml025}
+\begin{align}
+\w{i}\omega\rho\,(\w{i}\omega + a_x + a_y + a_z)\, u_i &=
+\sum_{j=1}^{3} \partial_{x_j}
+\sigma_{ji}^{\text{pml}}\,,\label{E:apml025a}\\
+(\w{i}\omega + a_i)\,\sigma_{ij}^{\text{pml}} &= \sum_{k,l=1}^{3}
+\w{i}\omega\,\Xi_{ijkl} \epsilon_{kl}^{\text{pml}}\,,\label{E:apml025b}\\
+\w{i}\omega\,\epsilon_{kl}^{\text{pml}} &=(\w{i}\omega + a_x + a_y +
+a_z - a_k)\,\partial_{x_k} u_l\,.\label{E:apml025c}
+\end{align}
+\end{subequations}
+Transforming into the time domain, finally yields
+\begin{subequations}\label{E:apml026}
+\begin{align}
+\rho\,\partial_t^2 u_i + \rho\,(a_x+a_y+a_z) \partial_t u_i &=
+\sum_{j=1}^{3} \partial_{x_j}
+\sigma_{ji}^{\text{pml}}\,,\label{E:apml026a}\\
+\partial_t \sigma_{ij}^{\text{pml}} + a_i \sigma_{ij}^{\text{pml}}
+&= \sum_{k,l=1}^{3} \Xi_{ijkl}
+*\partial_t{\epsilon}_{kl}^{\text{pml}}\,,\label{E:apml026b}\\
+\partial_t{\epsilon}_{kl}^{\text{pml}} &= \partial_t \partial_{x_k} u_l +
+(a_x+a_y+a_z-a_k)\,\partial_{x_k} u_l\,,\label{E:apml026c}
+\end{align}
+\end{subequations}
+or in tensor notation:
+\begin{subequations}\label{E:apml027}
+\begin{align}
+\rho\,\partial_t^2\w{u}+\rho\,\text{tr}(\w{a})\,\partial_t \w{u} &=
+\nabla\cdot\s{\sigma}^{\text{pml}}\,,\label{E:apml027a}\\
+\partial_t\s{\sigma}^{\text{pml}} +
+\w{a}\cdot\s{\sigma}^{\text{pml}} &=\int\limits_{-\infty}^{t}
+\s{\Xi}(t-\tau):\partial_t\s{\epsilon}^{\text{pml}}(\tau)\,d\tau\,,\label{E:apml027b}\\
+\partial_t\s{\epsilon}^{\text{pml}} &= \partial_t \nabla\w{u} +
+(\w{I}\,\text{tr}(\w{a})-\w{a})\cdot\nabla
+\w{u}\,,\label{E:apml027c}
+\end{align}
+\end{subequations}
+where $\w{a}$ is defined as
+\begin{equation}\label{E:apml028}
+\w{a}:=\left(
+         \begin{array}{ccc}
+           a_x & 0 & 0 \\
+           0 & a_y & 0 \\
+           0 & 0 & a_z \\
+         \end{array}
+       \right)\,.
+\end{equation}
+The gradients in equation (\ref{E:apml027c}) are left-gradients. The
+choice of $\gamma_i$ as inversely proportional to $\omega$ leads to
+relatively simple differential equations that can be marched forward
+in time explicitly. Different definitions of $\gamma_i$ generally
+result in temporal convolutions and therefore lead to
+integro-differential equations that are more difficult to solve, at
+least in the time domain.
