@@ -161,7 +161,7 @@ The actual wave propagation executable is \texttt{ses3d.exe}, located in \texttt
 \subsection{Computing sensitivity kernels}\label{S:kernels}
 
 The computation of sensitivity kernels proceeds in several steps. First of all, a forward simulation must be run with the \texttt{adjoint\_flag} in the \texttt{setup} file set to \texttt{1}. This ensures that the forward field is stored in the directory which appears in the last line of the \texttt{setup} file. Make sure enough storage is actually available.\\
-One the forward field is computed, adjoint sources for a variety of measurements can be computed using Python tools in the \texttt{TOOLS} directory. An example of this procedure is given below:\\[5pt]
+Once the forward field is computed, adjoint sources for a variety of measurements can be computed using Python tools in the \texttt{TOOLS} directory. An example of this procedure is given below:\\[5pt]
 \texttt{run seismograms.py}: Compile Python tool for reading and plotting seismograms.\\[5pt]
 \texttt{run adjoint\_source.py}: Compile Python tool for the computation of adjoint sources.\\[5pt]
 \texttt{s=ses3d\_seismogram()}: Make empty seismogram structure.\\[5pt]
