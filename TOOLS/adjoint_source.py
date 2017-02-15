@@ -346,19 +346,7 @@ class adjoint_source:
 
     #- compute the cosine taper and apply to seismogram
 
-    N_0=int(round(win_left/self.s.dt))
-    N=int(round(win_right/self.s.dt)-N_0)
-
-    taper=np.zeros(self.s.nt,dtype=float)
-
-    n=(self.s.t>win_left) & (self.s.t<win_right)
-    taper[n]=1.0
-
-    n=self.s.t<=taper_width
-    h=0.5*(1.0-np.cos(np.pi*self.s.t[n]/taper_width))
-    taper[N_0:N_0+len(h)]=h
-    h=0.5*(1.0+np.cos(np.pi*self.s.t[n]/taper_width))
-    taper[N_0+N-len(h):N_0+N]=h
+    taper = cosine_taper(self.s.t, win_left, win_right, taper_width)
 
     if verbose==True:
       plt.plot(self.s.t,taper)
@@ -370,8 +358,6 @@ class adjoint_source:
     d=d*taper
 
     #- compute adjoint source
-
-    adsrc=np.zeros(self.s.nt,dtype=float)
 
     normalisation=np.sum(d*d)*self.s.dt
 
@@ -423,19 +409,7 @@ class adjoint_source:
 
     #- compute the cosine taper and apply to seismogram
 
-    N_0=int(round(win_left/self.s.dt))
-    N=int(round(win_right/self.s.dt)-N_0)
-
-    taper=np.zeros(self.s.nt,dtype=float)
-
-    n=(self.s.t>win_left) & (self.s.t<win_right)
-    taper[n]=1.0
-
-    n=self.s.t<=taper_width
-    h=0.5*(1.0-np.cos(np.pi*self.s.t[n]/taper_width))
-    taper[N_0:N_0+len(h)]=h
-    h=0.5*(1.0+np.cos(np.pi*self.s.t[n]/taper_width))
-    taper[N_0+N-len(h):N_0+N]=h
+    taper=cosine_taper(self.s.t,win_left,win_right,taper_width)
 
     if verbose==True:
       plt.plot(self.s.t,taper)
@@ -447,8 +421,6 @@ class adjoint_source:
     d=d*taper
 
     #- compute adjoint source
-
-    adsrc=np.zeros(self.s.nt,dtype=float)
 
     d[0:len(d)-1]=np.diff(d)/self.s.dt
     d[len(d)-1]=0.0
@@ -470,3 +442,37 @@ class adjoint_source:
       self.adsrc_y=adsrc
     elif component=='z':
       self.adsrc_z=adsrc
+
+
+#########################################################################
+# define cosine tape function
+#########################################################################
+
+def cosine_taper(t,win_left,win_right,taper_width):
+  """
+  Compute cosine taper.
+  :param t: time axis
+  :param win_left: left window boundary
+  :param win_right: right window boundary
+  :param taper_width: width of the taper
+  :return: cosine taper time series
+  """
+
+  dt=t[1]-t[0]
+  nt=len(t)
+
+  N_0 = int(round(win_left / dt))
+  N = int(round(win_right / dt)) - N_0
+
+  taper = np.zeros(nt, dtype=float)
+
+  n = (t > win_left) & (t < win_right)
+  taper[n] = 1.0
+
+  n = (t <= taper_width)
+  h = 0.5 * (1.0 - np.cos(np.pi * t[n] / taper_width))
+  taper[N_0 - len(h):N_0] = h
+  h = 0.5 * (1.0 + np.cos(np.pi * t[n] / taper_width))
+  taper[N_0 + N:N_0 + N + len(h)] = h
+
+  return taper
