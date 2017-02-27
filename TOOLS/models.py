@@ -225,9 +225,9 @@ class ses3d_model(object):
     if verbose==True:
       print 'number of subvolumes: '+str(self.nsubvol)
 
-    idx=np.zeros(self.nsubvol,dtype=int)+1
-    idy=np.zeros(self.nsubvol,dtype=int)+1
-    idz=np.zeros(self.nsubvol,dtype=int)+1
+    idx=np.ones(self.nsubvol,dtype=int)
+    idy=np.ones(self.nsubvol,dtype=int)
+    idz=np.ones(self.nsubvol,dtype=int)
 
     for k in np.arange(1,self.nsubvol,dtype=int):
       idx[k]=int(dx[idx[k-1]])+idx[k-1]+1
@@ -236,16 +236,16 @@ class ses3d_model(object):
 
     for k in np.arange(self.nsubvol,dtype=int):
       subvol=ses3d_submodel()
-      subvol.lat=90.0-dx[(idx[k]+1):(idx[k]+1+dx[idx[k]])]
-      subvol.lon=dy[(idy[k]+1):(idy[k]+1+dy[idy[k]])]
-      subvol.r  =dz[(idz[k]+1):(idz[k]+1+dz[idz[k]])]
+      subvol.lat=90.0-dx[(idx[k]+1):(idx[k]+1+int(dx[idx[k]]))]
+      subvol.lon=dy[(idy[k]+1):(idy[k]+1+int(dy[idy[k]]))]
+      subvol.r  =dz[(idz[k]+1):(idz[k]+1+int(dz[idz[k]]))]
       self.m.append(subvol)
 
     #- compute rotated version of the coordinate lines ====================
 
-    if self.phi!=0.0:
+    for k in np.arange(self.nsubvol,dtype=int):
 
-      for k in np.arange(self.nsubvol,dtype=int):
+      if self.phi!=0.0:
 
         nx=len(self.m[k].lat)
         ny=len(self.m[k].lon)
@@ -259,11 +259,10 @@ class ses3d_model(object):
             self.m[k].lat_rot[idx,idy],self.m[k].lon_rot[idx,idy]=rot.rotate_coordinates(self.n,-self.phi,90.0-self.m[k].lat[idx],self.m[k].lon[idy])
             self.m[k].lat_rot[idx,idy]=90.0-self.m[k].lat_rot[idx,idy]
 
-    else:
-
-      self.m[k].lat_rot,self.m[k].lon_rot=np.meshgrid(self.m[k].lat,self.m[k].lon)
-      self.m[k].lat_rot=np.transpose(self.m[k].lat_rot)
-      self.m[k].lon_rot=np.transpose(self.m[k].lon_rot)
+      else:
+        self.m[k].lat_rot,self.m[k].lon_rot=np.meshgrid(self.m[k].lat,self.m[k].lon)
+        self.m[k].lat_rot=np.transpose(self.m[k].lat_rot)
+        self.m[k].lon_rot=np.transpose(self.m[k].lon_rot)
 
     #- read model volume ==================================================
 
