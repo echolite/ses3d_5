@@ -192,10 +192,11 @@ class ses3d_model(object):
   #########################################################################
   #- read a 3D model
   #########################################################################
-  def read(self,directory,filename,verbose=False):
-    """ read an ses3d model from a file
+  def read(self,directory,filename=None,verbose=False):
+    """ Read an ses3d model from a file. If filename==None, the field
+    values are filled with zeros.
 
-    read(self,directory,filename,verbose=False):
+    read(self,directory,filename=None,verbose=False):
     """
 
     #- read block files ====================================================
@@ -266,28 +267,35 @@ class ses3d_model(object):
 
     #- read model volume ==================================================
 
-    fid_m=open(directory+filename,'r')
+    if (filename):
 
-    if verbose==True:
-      print 'read model file: '+directory+filename
+      fid_m=open(directory+filename,'r')
 
-    v=np.array(fid_m.read().strip().split('\n'),dtype=float)
+      if verbose==True:
+        print 'read model file: '+directory+filename
 
-    fid_m.close()
+      v=np.array(fid_m.read().strip().split('\n'),dtype=float)
+
+      fid_m.close()
 
     #- assign values ======================================================
 
     idx=1
     for k in np.arange(self.nsubvol):
 
-      n=int(v[idx])
       nx=len(self.m[k].lat)-1
       ny=len(self.m[k].lon)-1
       nz=len(self.m[k].r)-1
 
-      self.m[k].v=v[(idx+1):(idx+1+n)].reshape(nx,ny,nz)
+      if (filename):
 
-      idx=idx+n+1
+        n=int(v[idx])
+        self.m[k].v=v[(idx+1):(idx+1+n)].reshape(nx,ny,nz)
+        idx=idx+n+1
+
+      else:
+
+        self.m[k].v=np.zeros((nx,ny,nz))
 
     #- decide on global or regional model==================================
 
