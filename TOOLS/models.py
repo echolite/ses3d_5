@@ -1,6 +1,7 @@
 # -*- coding: iso-8859-1 -*-
 
 import numpy as np
+import copy as copy
 import matplotlib.pylab as plt
 from mpl_toolkits.basemap import Basemap
 import colormaps as cm
@@ -67,41 +68,11 @@ class ses3d_model(object):
   #- copy models
   #########################################################################
   def copy(self):
-    """ Copy a model
+    """ Deepcopy a model
     """
 
     res=ses3d_model()
-
-    res.nsubvol=self.nsubvol
-
-    res.lat_min=self.lat_min
-    res.lat_max=self.lat_max
-    res.lon_min=self.lon_min
-    res.lon_max=self.lon_max
-    res.lat_centre=self.lat_centre
-    res.lon_centre=self.lon_centre
-    res.phi=self.phi
-
-    res.n=self.n
-
-    res.global_regional=self.global_regional
-    res.d_lon=self.d_lon
-    res.d_lat=self.d_lat
-
-    for k in np.arange(self.nsubvol):
-
-      subvol=ses3d_submodel()
-
-      subvol.lat=self.m[k].lat
-      subvol.lon=self.m[k].lon
-      subvol.r=self.m[k].r
-
-      subvol.lat_rot=self.m[k].lat_rot
-      subvol.lon_rot=self.m[k].lon_rot
-      
-      subvol.v=self.m[k].v
-
-      res.m.append(subvol)
+    res=copy.deepcopy(self)
 
     return res
 
